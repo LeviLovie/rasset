@@ -4,7 +4,7 @@ use std::path::Path;
 use thiserror::Error;
 use uuid::Uuid;
 
-pub use proc_macros::{asset, asset_def};
+pub use proc_macros::{asset, asset_def, asset_file};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AssetType(pub TypeId);

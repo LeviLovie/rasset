@@ -105,8 +105,6 @@ pub fn asset_def(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
-        extern crate bincode;
-
         #[derive(Debug, Clone, bincode::Encode, bincode::Decode)]
         pub struct #meta_struct_name {
             #(#meta_fields,)*
@@ -205,6 +203,105 @@ pub fn asset(input: TokenStream) -> TokenStream {
                     Vec::new()
                 )
             };
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+struct AssetFileEntry {
+    name: Ident,
+    _colon: Token![:],
+    base: Ident,
+    _brace_token: syn::token::Brace,
+    fields: Punctuated<KeyValue, Token![,]>,
+}
+
+impl Parse for AssetFileEntry {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let name: Ident = input.parse()?;
+        let _colon: Token![:] = input.parse()?;
+        let base: Ident = input.parse()?;
+        let content;
+        let _brace_token = braced!(content in input);
+        let fields = content.parse_terminated(KeyValue::parse, Token![,])?;
+
+        Ok(Self {
+            name,
+            _colon,
+            base,
+            _brace_token,
+            fields,
+        })
+    }
+}
+
+struct AssetFileBlock {
+    name: Ident,
+    _comma: Token![,],
+    _assets_token: Ident,
+    _colon: Token![:],
+    _brace_token: syn::token::Brace,
+    entries: Punctuated<AssetFileEntry, Token![,]>,
+}
+
+impl Parse for AssetFileBlock {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let _name_token: Ident = input.parse()?;
+        let _color_token: Token![:] = input.parse()?;
+        let name: Ident = input.parse()?;
+        let comma: Token![,] = input.parse()?;
+        let assets_token: Ident = input.parse()?;
+        let colon: Token![:] = input.parse()?;
+
+        let content;
+        let brace_token = braced!(content in input);
+        let entries = content.parse_terminated(AssetFileEntry::parse, Token![,])?;
+
+        Ok(Self {
+            name,
+            _comma: comma,
+            _assets_token: assets_token,
+            _colon: colon,
+            _brace_token: brace_token,
+            entries,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn asset_file(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as AssetFileBlock);
+
+    let global_name = &input.name;
+    let first_entry = input.entries.first().expect("Expected at least one asset");
+    let base_type = &first_entry.base;
+
+    let asset_exprs = input.entries.iter().map(|entry| {
+        let asset_name = &entry.name;
+        let meta_type = format_ident!("{}Meta", entry.base); // still use specific meta type per asset
+
+        let meta_fields = entry.fields.iter().map(|kv| {
+            let key = &kv.key;
+            let val = &kv.value;
+            quote! { #key: #val }
+        });
+
+        quote! {
+            {
+                let meta = #meta_type {
+                    #(#meta_fields,)*
+                };
+                #base_type::new(stringify!(#asset_name), meta, Vec::new())
+            }
+        }
+    });
+
+    let expanded = quote! {
+        lazy_static::lazy_static! {
+            pub static ref #global_name: Vec<#base_type> = vec![
+                #(#asset_exprs),*
+            ];
         }
     };
 
