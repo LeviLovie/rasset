@@ -1,4 +1,4 @@
-use rasset::{asset, asset_def, asset_file, AssetConfig, AssetData, AssetError, AssetType};
+use rasset::{asset, asset_def, AssetConfig, AssetData, AssetError, AssetType};
 
 asset_def! {
     name: Sprite,
@@ -9,42 +9,29 @@ asset_def! {
     }
 }
 
-asset_def! {
-    name: Font,
+asset! {
+    name: PlayerSprite,
+    base: Sprite,
     meta: {
-        name: String,
+        size: (32, 48),
+        origin: (16, 24),
+        frame_count: 8,
     }
 }
 
 asset! {
-    name: SimpleFont,
-    base: Font,
-    data: {
-        name: "SimpleFont".into(),
-    }
-}
-
-asset_file! {
-    name: Sprites,
-    assets: {
-        PlayerSprite: Sprite {
-            size: (32, 48),
-            origin: (16, 24),
-            frame_count: 8,
-        },
-        EnemySprite: Sprite {
-            size: (32, 32),
-            origin: (16, 16),
-            frame_count: 4,
-        },
+    name: EnemySprite,
+    base: Sprite,
+    meta: {
+        size: (32, 32),
+        origin: (16, 16),
+        frame_count: 4,
     }
 }
 
 fn main() {
-    for sprite in Sprites.iter() {
-        println!("Sprite name: {}", sprite.name);
-        println!("Size: {:?}", sprite.meta.size);
-    }
-
-    println!("Font: {:?}", SimpleFont.name);
+    println!("Player sprite size: {:?}", PlayerSprite.meta.size);
+    println!("Player sprite origin: {:?}", PlayerSprite.meta.origin);
+    println!("Enemy sprite size: {:?}", EnemySprite.meta.size);
+    println!("Enemy sprite origin: {:?}", EnemySprite.meta.origin);
 }

@@ -273,35 +273,35 @@ impl Parse for AssetFileBlock {
 pub fn asset_file(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as AssetFileBlock);
 
-    let global_name = &input.name;
-    let first_entry = input.entries.first().expect("Expected at least one asset");
-    let base_type = &first_entry.base;
-
-    let asset_exprs = input.entries.iter().map(|entry| {
+    let asset_defs = input.entries.iter().map(|entry| {
         let asset_name = &entry.name;
-        let meta_type = format_ident!("{}Meta", entry.base); // still use specific meta type per asset
-
-        let meta_fields = entry.fields.iter().map(|kv| {
+        let asset_ty = &entry.base;
+        let meta_ty = format_ident!("{}Meta", asset_ty);
+        let field_inits = entry.fields.iter().map(|kv| {
             let key = &kv.key;
             let val = &kv.value;
             quote! { #key: #val }
         });
 
         quote! {
-            {
-                let meta = #meta_type {
-                    #(#meta_fields,)*
+            pub static ref #asset_name: #asset_ty = {
+                let meta = #meta_ty {
+                    #(#field_inits,)*
                 };
-                #base_type::new(stringify!(#asset_name), meta, Vec::new())
-            }
+
+                #asset_ty::new(stringify!(#asset_name), meta, Vec::new())
+            };
         }
     });
 
+    let module_name = format_ident!("{}", input.name);
+
     let expanded = quote! {
-        lazy_static::lazy_static! {
-            pub static ref #global_name: Vec<#base_type> = vec![
-                #(#asset_exprs),*
-            ];
+        pub mod #module_name {
+            use super::*;
+            lazy_static::lazy_static! {
+                #(#asset_defs)*
+            }
         }
     };
 
