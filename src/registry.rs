@@ -75,10 +75,10 @@ impl Registry {
         self.assets.len()
     }
 
-    pub fn get_asset<T: Asset + 'static>(&self) -> Option<&T> {
+    pub fn get_asset<T: Asset + 'static>(&self, name: &str) -> Option<&T> {
         let type_id = std::any::TypeId::of::<T>();
         self.assets.iter().find_map(|asset| {
-            if asset.get_type().0 == type_id {
+            if asset.get_type().0 == type_id && asset.name() == name {
                 asset.as_any().downcast_ref::<T>()
             } else {
                 None

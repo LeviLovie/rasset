@@ -8,6 +8,9 @@ pub trait Asset: Send + Sync + Any + 'static {
     /// Returns the type name of the asset as a string.
     fn type_name(&self) -> &'static str;
 
+    /// Returns the name of the asset.
+    fn name(&self) -> String;
+
     /// Returns a reference to the asset as a trait object for dynamic type checking.
     fn as_any(&self) -> &dyn Any;
 
