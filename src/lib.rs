@@ -7,6 +7,8 @@ mod registry;
 mod r#type;
 
 pub mod prelude {
+    pub use macros::*;
+
     pub use super::asset::Asset;
     pub use super::bundle::Bundle;
     pub use super::compiler::Compiler;
