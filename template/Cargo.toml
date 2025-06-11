@@ -1,0 +1,12 @@
+[package]
+name = "template"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+assets = { path = "assets" }
+rasset = { path = "../" }
+
+[build-dependencies]
+assets = { path = "assets", features = ["declare"] }

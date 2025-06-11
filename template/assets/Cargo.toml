@@ -1,0 +1,11 @@
+[package]
+name = "assets"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+declare = []
+
+[dependencies]
+bincode = "2.0.1"
+rasset = { path = "../../" }
