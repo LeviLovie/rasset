@@ -63,7 +63,7 @@ pub fn asset_def(input: TokenStream) -> TokenStream {
         .collect();
 
     let expanded = quote! {
-        #[derive(Debug, Clone, rasset::prelude::bincode::Encode, rasset::prelude::bincode::Decode)]
+        #[derive(Debug, Clone, bincode::Encode, bincode::Decode)]
         pub struct #struct_name {
             #(pub #field_names: #field_types),*
         }
