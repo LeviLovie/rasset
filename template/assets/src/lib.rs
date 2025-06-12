@@ -3,7 +3,7 @@ use rasset::prelude::*;
 asset_def! {
     Sprite: {
         size: (u32, u32),
-        texture: String,
+        texture: Vec<u8>,
     }
 }
 
@@ -18,11 +18,11 @@ pub mod declare {
     assets!(
         PlayerSprite: Sprite {
             size: (64, 64),
-            texture: "path/to/player.png".to_string(),
+            texture: include_bytes!("../Cargo.toml").to_vec(),
         },
         EnemySprite: Sprite {
             size: (32, 32),
-            texture: "path/to/enemy.png".to_string(),
+            texture: include_bytes!("../../build.rs").to_vec(),
         }
     );
 }

@@ -1,4 +1,4 @@
-use crate::{asset::Asset, error::Error};
+use crate::{asset::Asset, error::Error, prelude::bincode};
 
 pub struct Compiler {
     pub assets: Vec<Box<dyn Asset>>,
@@ -14,15 +14,14 @@ impl Compiler {
     }
 
     pub fn compile(&self) -> Result<Vec<u8>, Error> {
-        let mut assets_with_types: Vec<(String, Vec<u8>)> = Vec::new();
-
+        let mut assets: Vec<(String, Vec<u8>)> = Vec::new();
         for asset in &self.assets {
             let type_name = asset.type_name().to_string();
             let bytes = asset.to_bytes()?;
-            assets_with_types.push((type_name, bytes));
+            assets.push((type_name, bytes));
         }
 
-        bincode::encode_to_vec(&assets_with_types, bincode::config::standard())
+        bincode::encode_to_vec(&assets, bincode::config::standard())
             .map_err(|e| Error::Serialization(format!("Failed to serialize assets: {}", e)))
     }
 }

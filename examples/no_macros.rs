@@ -1,6 +1,6 @@
 use rasset::prelude::*;
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, bincode::Encode, bincode::Decode)]
 struct SpriteAsset {
     name: String,
     size: (u32, u32),
@@ -56,7 +56,6 @@ fn main() -> Result<(), Error> {
         compiler.add_asset(Box::new(enemy_sprite));
 
         let result = compiler.compile()?;
-        println!("Compiled assets: {:?}", result);
 
         result
     };
@@ -65,6 +64,7 @@ fn main() -> Result<(), Error> {
         let registry = Registry::builder()
             .reg_type::<SpriteAsset>()
             .load(&binary)?;
+
         println!("Loaded registry with {} assets", registry.amount());
         println!("Player: {:?}", registry.get_asset::<SpriteAsset>("Player"));
         println!("Enemy: {:?}", registry.get_asset::<SpriteAsset>("Enemy"));

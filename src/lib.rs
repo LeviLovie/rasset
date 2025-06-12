@@ -17,5 +17,5 @@ pub mod prelude {
     pub use super::r#type::Type;
     pub use super::registry::Registry;
 
-    pub use bincode::{self, Decode, Encode};
+    pub use bincode;
 }
