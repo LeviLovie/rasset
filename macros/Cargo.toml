@@ -1,5 +1,7 @@
 [package]
-name = "macros"
+name = "rasset_macros"
+description = "Macros for the Rust Asset Management Library"
+homepage = "https://github.com/LeviLovie/rasset"
 version = "1.0.0-beta.1"
 edition = "2024"
 

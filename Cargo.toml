@@ -1,9 +1,3 @@
-[workspace]
-resolver = "2"
-members = [
-    "macros",
-]
-
 [package]
 name = "rasset"
 description = "Rust Asset Management Library"
@@ -15,7 +9,7 @@ version = "1.0.0-beta.1"
 edition = "2024"
 
 [dependencies]
-macros = { version = "1.0.0-beta.1", path = "macros" }
+rasset_macros = { version = "1.0.0-beta.1", path = "macros" }
 bincode = { version = "2.0.1", features = ["serde"] }
 thiserror = "2.0.12"
 uuid = { version = "1.17.0", features = ["v4"] }
