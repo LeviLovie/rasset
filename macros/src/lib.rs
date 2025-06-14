@@ -177,3 +177,86 @@ pub fn assets(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+#[proc_macro]
+pub fn asset_file(input: TokenStream) -> TokenStream {
+    let file_path_lit = syn::parse_macro_input!(input as syn::LitStr);
+    let file_path = file_path_lit.value();
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    let absolute_path = std::path::Path::new(&manifest_dir).join(&file_path);
+
+    let contents = std::fs::read_to_string(&absolute_path)
+        .unwrap_or_else(|e| panic!("Failed to read {}: {}", absolute_path.display(), e));
+
+    #[derive(Debug, serde::Deserialize)]
+    struct AssetYaml {
+        name: String,
+        #[serde(rename = "type")]
+        ty: String,
+        metadata: serde_yaml::Value,
+    }
+
+    let parsed: Vec<AssetYaml> = serde_yaml::from_str(&contents)
+        .unwrap_or_else(|e| panic!("Failed to parse YAML {}: {}", file_path, e));
+
+    let asset_tokens = parsed.into_iter().map(|asset| {
+        let _name_ident = syn::Ident::new(&asset.name, proc_macro2::Span::call_site());
+        let ty_ident = syn::Ident::new(&asset.ty, proc_macro2::Span::call_site());
+
+        let metadata_map = asset
+            .metadata
+            .as_mapping()
+            .expect("metadata must be a mapping");
+
+        let field_inits = metadata_map.iter().map(|(k, v)| {
+            let key = k.as_str().expect("metadata key must be string");
+            let ident = syn::Ident::new(key, proc_macro2::Span::call_site());
+
+            let expr = yaml_value_to_expr(v);
+            quote! { #ident: #expr }
+        });
+
+        let name_string = &asset.name;
+        quote! {
+            {
+                let mut asset = #ty_ident {
+                    name: #name_string.to_string(),
+                    #(#field_inits),*
+                };
+                asset
+            }
+        }
+    });
+
+    let expanded = quote! {
+        pub fn compile_assets() -> Result<Vec<u8>, Error> {
+            let mut compiler = rasset::prelude::Compiler::new();
+            #(compiler.add_asset(Box::new(#asset_tokens));)*
+            Ok(compiler.compile()?.to_vec())
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+fn yaml_value_to_expr(value: &serde_yaml::Value) -> proc_macro2::TokenStream {
+    match value {
+        serde_yaml::Value::Bool(b) => quote! { #b },
+        serde_yaml::Value::Number(n) => {
+            if let Some(i) = n.as_u64() {
+                quote! { #i }
+            } else if let Some(f) = n.as_f64() {
+                quote! { #f }
+            } else {
+                panic!("Unsupported number: {n}")
+            }
+        }
+        serde_yaml::Value::String(s) => quote! { #s.to_string() },
+        serde_yaml::Value::Sequence(seq) => {
+            let elems = seq.iter().map(yaml_value_to_expr);
+            quote! { (#(#elems),*) }
+        }
+        _ => panic!("Unsupported YAML value: {value:?}"),
+    }
+}

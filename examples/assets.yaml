@@ -1,0 +1,10 @@
+- name: Player
+  type: Sprite
+  metadata:
+    size: [64, 64]
+    texture: "path/to/player_texture.png"
+- name: Enemy
+  type: Sprite
+  metadata:
+    size: [32, 32]
+    texture: "path/to/enemy_texture.png"
