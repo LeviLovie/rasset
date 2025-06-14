@@ -5,11 +5,11 @@
 
 # Rust Asset System
 
-Rasset is a library that provides proc macros to serialize Rust structs into a binary file at buildtime and deserialize at runtime.
+Rasset is a library that provides proc macros to serialize Rust structs into a binary file at build time and deserialize at runtime.
 
 ## Quick start
 
-Please take a look at [exaples](./examples/) and [template](./template).
+Please take a look at [examples](./examples/) and the [template](./template).
 
 ```rust
 asset_def! {
@@ -73,7 +73,7 @@ Proc macro `asset_file` takes a [YAML](https://en.wikipedia.org/wiki/YAML) file 
 
 YAML supports there tags:
 
-- `!Rust`: Instead of storing string, parser with interpret the data as a Rust expression. `texture: !Rust include_bytes!("texture.png").to_vec()`
+- `!Rust`: Instead of storing the string, parser with interpret the data as a Rust expression. `texture: !Rust include_bytes!("texture.png").to_vec()`
 - `!IncludeBytes`: Generates `include_bytes!(STRING)`.
 - `!IncludeStr`: Generates `include_str!(STRING)`.
 - `!IncludeVec`: Generates `include_bytes!(STRING).to_vec()`.
