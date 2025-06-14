@@ -1,7 +1,7 @@
 [![Crates.io](https://img.shields.io/crates/v/rasset.svg)](https://crates.io/crates/rasset)
 [![Docs.rs](https://docs.rs/rasset/badge.svg)](https://docs.rs/rasset)
 [![License](https://img.shields.io/crates/l/rasset.svg)](LICENSE)
-[![CI/CD](https://github.com/levilovie/rasset/actions/workflows/ci.yml/badge.svg)](https://github.com/levilovie/rasset/actions/workflows/ci.yml/)
+[![CI](https://github.com/levilovie/rasset/actions/workflows/ci.yml/badge.svg)](https://github.com/levilovie/rasset/actions/workflows/ci.yml/)
 
 # Rust Asset System
 
