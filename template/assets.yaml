@@ -1,0 +1,16 @@
+- name: Player
+  type: Sprite
+  metadata:
+    size: [64, 64]
+    texture: !Rust include_bytes!("../../Cargo.toml").to_vec()
+
+- name: Enemy
+  type: Sprite
+  metadata:
+    size: [32, 32]
+    texture: !IncludeVec "../../build.rs"
+
+- name: Sprites
+  type: Sprites
+  metadata:
+    sprites: ["Player", "Enemy"]

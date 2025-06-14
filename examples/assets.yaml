@@ -1,0 +1,16 @@
+- name: Player
+  type: Sprite
+  metadata:
+    size: [64, 64]
+    texture: "/path/to/player/texture/"
+
+- name: Enemy
+  type: Sprite
+  metadata:
+    size: [32, 32]
+    texture: "/path/to/enemy/texture/"
+
+- name: Sprites
+  type: Sprites
+  metadata:
+    sprites: ["Player", "Enemy"]
