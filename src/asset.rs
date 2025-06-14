@@ -1,6 +1,7 @@
 use crate::{error::Error, r#type::Type};
 use std::any::Any;
 
+/// Trait representing a generic asset in the system.
 pub trait Asset: Send + Sync + Any + 'static {
     /// Returns the unique type identifier for the asset.
     fn get_type(&self) -> Type;
