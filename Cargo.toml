@@ -9,7 +9,7 @@ version = "1.0.0-beta.1"
 edition = "2024"
 
 [dependencies]
-macros = { path = "macros" }
+macros = { version = "1.0.0-beta.1", path = "macros" }
 bincode = { version = "2.0.1", features = ["serde"] }
 thiserror = "2.0.12"
 uuid = { version = "1.17.0", features = ["v4"] }
