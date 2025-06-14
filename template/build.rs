@@ -8,5 +8,6 @@ fn main() {
     let out_path = std::path::Path::new(&target_dir).join("assets.bin");
     std::fs::write(out_path, compiled_assets).expect("Failed to write assets to file");
 
-    println!("cargo:rerun-if-changed=assets/");
+    println!("cargo:rerun-if-changed=./assets/");
+    println!("cargo:rerun-if-changed=./assets.yaml");
 }

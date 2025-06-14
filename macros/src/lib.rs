@@ -18,6 +18,17 @@ struct FieldDef {
     ty: Type,
 }
 
+struct AssetDefsInput {
+    defs: Punctuated<AssetDefInput, Token![,]>,
+}
+
+impl Parse for AssetDefsInput {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let defs = Punctuated::parse_terminated(input)?;
+        Ok(AssetDefsInput { defs })
+    }
+}
+
 impl Parse for FieldDef {
     fn parse(input: ParseStream) -> Result<Self> {
         let name: Ident = input.parse()?;
@@ -46,59 +57,65 @@ impl Parse for AssetDefInput {
 
 #[proc_macro]
 pub fn asset_def(input: TokenStream) -> TokenStream {
-    let AssetDefInput {
-        struct_name,
-        fields,
-    } = syn::parse_macro_input!(input as AssetDefInput);
+    let AssetDefsInput { defs } = syn::parse_macro_input!(input as AssetDefsInput);
 
-    let name_ident = syn::Ident::new("name", proc_macro2::Span::call_site());
-    let string_type: syn::Type = syn::parse_quote!(String);
+    let mut expanded_tokens = proc_macro2::TokenStream::new();
 
-    let field_names: Vec<syn::Ident> = std::iter::once(name_ident.clone())
-        .chain(fields.iter().map(|f| f.name.clone()))
-        .collect();
+    for def in defs {
+        let struct_name = &def.struct_name;
+        let fields = &def.fields;
 
-    let field_types: Vec<syn::Type> = std::iter::once(string_type.clone())
-        .chain(fields.iter().map(|f| f.ty.clone()))
-        .collect();
+        let name_ident = syn::Ident::new("name", proc_macro2::Span::call_site());
+        let string_type: syn::Type = syn::parse_quote!(String);
 
-    let expanded = quote! {
-        #[derive(Debug, Clone, bincode::Encode, bincode::Decode)]
-        pub struct #struct_name {
-            #(pub #field_names: #field_types),*
-        }
+        let field_names: Vec<syn::Ident> = std::iter::once(name_ident.clone())
+            .chain(fields.iter().map(|f| f.name.clone()))
+            .collect();
 
-        impl rasset::prelude::Asset for #struct_name {
-            fn get_type(&self) -> rasset::prelude::Type {
-                rasset::prelude::Type(std::any::TypeId::of::<#struct_name>())
+        let field_types: Vec<syn::Type> = std::iter::once(string_type.clone())
+            .chain(fields.iter().map(|f| f.ty.clone()))
+            .collect();
+
+        let expanded = quote! {
+            #[derive(Debug, Clone, bincode::Encode, bincode::Decode)]
+            pub struct #struct_name {
+                #(pub #field_names: #field_types),*
             }
 
-            fn type_name(&self) -> &'static str {
-                std::any::type_name::<Self>()
-            }
+            impl rasset::prelude::Asset for #struct_name {
+                fn get_type(&self) -> rasset::prelude::Type {
+                    rasset::prelude::Type(std::any::TypeId::of::<#struct_name>())
+                }
 
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
+                fn type_name(&self) -> &'static str {
+                    std::any::type_name::<Self>()
+                }
 
-            fn name(&self) -> String {
-                self.name.clone()
-            }
+                fn as_any(&self) -> &dyn std::any::Any {
+                    self
+                }
 
-            fn to_bytes(&self) -> Result<Vec<u8>, rasset::prelude::Error> {
-                bincode::encode_to_vec(self, bincode::config::standard())
-                    .map_err(|e| rasset::prelude::Error::Serialization(format!("Failed to serialize {}: {}", stringify!(#struct_name), e)))
-            }
+                fn name(&self) -> String {
+                    self.name.clone()
+                }
 
-            fn from_bytes(bytes: &[u8]) -> Result<Self, rasset::prelude::Error> {
-                bincode::decode_from_slice(bytes, bincode::config::standard())
-                    .map_err(|e| rasset::prelude::Error::Deserialization(format!("Failed to deserialize {}: {}", stringify!(#struct_name), e)))
-                    .map(|(asset, _)| asset)
-            }
-        }
-    };
+                fn to_bytes(&self) -> Result<Vec<u8>, rasset::prelude::Error> {
+                    bincode::encode_to_vec(self, bincode::config::standard())
+                        .map_err(|e| rasset::prelude::Error::Serialization(format!("Failed to serialize {}: {}", stringify!(#struct_name), e)))
+                }
 
-    TokenStream::from(expanded)
+                fn from_bytes(bytes: &[u8]) -> Result<Self, rasset::prelude::Error> {
+                    bincode::decode_from_slice(bytes, bincode::config::standard())
+                        .map_err(|e| rasset::prelude::Error::Deserialization(format!("Failed to deserialize {}: {}", stringify!(#struct_name), e)))
+                        .map(|(asset, _)| asset)
+                }
+            }
+        };
+
+        expanded_tokens.extend(expanded);
+    }
+
+    TokenStream::from(expanded_tokens)
 }
 
 struct AssetInstance {
@@ -194,7 +211,7 @@ pub fn asset_file(input: TokenStream) -> TokenStream {
         name: String,
         #[serde(rename = "type")]
         ty: String,
-        metadata: serde_yaml::Value,
+        metadata: std::collections::HashMap<String, serde_yaml::Value>,
     }
 
     let parsed: Vec<AssetYaml> = serde_yaml::from_str(&contents)
@@ -204,13 +221,8 @@ pub fn asset_file(input: TokenStream) -> TokenStream {
         let _name_ident = syn::Ident::new(&asset.name, proc_macro2::Span::call_site());
         let ty_ident = syn::Ident::new(&asset.ty, proc_macro2::Span::call_site());
 
-        let metadata_map = asset
-            .metadata
-            .as_mapping()
-            .expect("metadata must be a mapping");
-
-        let field_inits = metadata_map.iter().map(|(k, v)| {
-            let key = k.as_str().expect("metadata key must be string");
+        let field_inits = asset.metadata.iter().map(|(k, v)| {
+            let key = k.as_str();
             let ident = syn::Ident::new(key, proc_macro2::Span::call_site());
 
             let expr = yaml_value_to_expr(v);
@@ -242,31 +254,62 @@ pub fn asset_file(input: TokenStream) -> TokenStream {
 
 fn yaml_value_to_expr(value: &serde_yaml::Value) -> proc_macro2::TokenStream {
     match value {
-        serde_yaml::Value::Bool(b) => quote! { #b },
+        serde_yaml::Value::Tagged(tagged) => match tagged.tag.to_string().as_str() {
+            "!Rust" => {
+                if let serde_yaml::Value::String(expr) = &tagged.value {
+                    let tokens: proc_macro2::TokenStream =
+                        expr.parse().expect("Invalid Rust expression");
+                    quote! { #tokens }
+                } else {
+                    panic!("!!Rust must wrap a string");
+                }
+            }
+            "!IncludeBytes" => {
+                if let serde_yaml::Value::String(path) = &tagged.value {
+                    quote! { include_bytes!(#path) }
+                } else {
+                    panic!("!IncludeBytes must wrap a string");
+                }
+            }
+            "!IncludeString" => {
+                if let serde_yaml::Value::String(path) = &tagged.value {
+                    quote! { include_str!(#path).to_string() }
+                } else {
+                    panic!("!IncludeString must wrap a string");
+                }
+            }
+            "!IncludeVec" => {
+                if let serde_yaml::Value::String(path) = &tagged.value {
+                    quote! { include_bytes!(#path).to_vec() }
+                } else {
+                    panic!("!IncludeBytes must wrap a string");
+                }
+            }
+            _ => yaml_value_to_expr(&tagged.value),
+        },
+        serde_yaml::Value::String(s) => quote! { #s.to_string() },
         serde_yaml::Value::Number(n) => {
-            if let Some(i) = n.as_u64() {
+            if let Some(i) = n.as_i64() {
                 quote! { #i }
             } else if let Some(f) = n.as_f64() {
                 quote! { #f }
             } else {
-                panic!("Unsupported number: {n}")
+                panic!("Unsupported number type: {}", n);
             }
         }
-        serde_yaml::Value::String(s) => quote! { #s.to_string() },
         serde_yaml::Value::Sequence(seq) => {
             let elems: Vec<_> = seq.iter().map(yaml_value_to_expr).collect();
-
             if seq
                 .iter()
                 .all(|v| matches!(v, serde_yaml::Value::String(_)))
             {
-                // Treat as Vec<String>
                 quote! { vec![#(#elems),*] }
             } else {
-                // Default to tuple
                 quote! { (#(#elems),*) }
             }
         }
-        _ => panic!("Unsupported YAML value: {value:?}"),
+        serde_yaml::Value::Bool(b) => quote! { #b },
+        serde_yaml::Value::Null => quote! { () },
+        _ => panic!("Unsupported YAML value: {:?}", value),
     }
 }

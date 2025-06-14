@@ -10,12 +10,15 @@ pub fn main() {
     let binary = std::fs::read(path).expect("Failed to read assets file");
 
     let registry = assets::register(binary).expect("Failed to register assets");
-    let player_sprite = registry
-        .get_asset::<assets::Sprite>("PlayerSprite")
+    let sprites = registry
+        .get_asset::<assets::Sprites>("Sprites")
         .expect("Failed to get PlayerSprite asset");
-    println!("Player Sprite: {:?}", player_sprite);
-    let enemy_sprite = registry
-        .get_asset::<assets::Sprite>("EnemySprite")
-        .expect("Failed to get EnemySprite asset");
-    println!("Enemy Sprite: {:?}", enemy_sprite);
+    for sprite_name in &sprites.sprites {
+        println!(
+            "Sprite: {:?}",
+            registry
+                .get_asset::<assets::Sprite>(sprite_name)
+                .expect("Failed to get sprite asset")
+        );
+    }
 }

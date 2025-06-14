@@ -2,12 +2,9 @@ use rasset::prelude::*;
 
 asset_def! {
     Sprite: {
-        size: (u64, u64),
+        size: (i64, i64),
         texture: String,
-    }
-}
-
-asset_def! {
+    },
     Sprites: {
         sprites: Vec<String>,
     }

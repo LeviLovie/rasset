@@ -2,13 +2,13 @@
   type: Sprite
   metadata:
     size: [64, 64]
-    texture: "/path/to/player/texture/"
+    texture: !Rust include_bytes!("../../Cargo.toml").to_vec()
 
 - name: Enemy
   type: Sprite
   metadata:
     size: [32, 32]
-    texture: "/path/to/enemy/texture/"
+    texture: !IncludeVec "../../build.rs"
 
 - name: Sprites
   type: Sprites
