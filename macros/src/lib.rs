@@ -254,8 +254,18 @@ fn yaml_value_to_expr(value: &serde_yaml::Value) -> proc_macro2::TokenStream {
         }
         serde_yaml::Value::String(s) => quote! { #s.to_string() },
         serde_yaml::Value::Sequence(seq) => {
-            let elems = seq.iter().map(yaml_value_to_expr);
-            quote! { (#(#elems),*) }
+            let elems: Vec<_> = seq.iter().map(yaml_value_to_expr).collect();
+
+            if seq
+                .iter()
+                .all(|v| matches!(v, serde_yaml::Value::String(_)))
+            {
+                // Treat as Vec<String>
+                quote! { vec![#(#elems),*] }
+            } else {
+                // Default to tuple
+                quote! { (#(#elems),*) }
+            }
         }
         _ => panic!("Unsupported YAML value: {value:?}"),
     }

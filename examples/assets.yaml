@@ -3,8 +3,14 @@
   metadata:
     size: [64, 64]
     texture: "path/to/player_texture.png"
+
 - name: Enemy
   type: Sprite
   metadata:
     size: [32, 32]
     texture: "path/to/enemy_texture.png"
+
+- name: Sprites
+  type: Sprites
+  metadata:
+    sprites: ["Player", "Enemy"]
