@@ -14,8 +14,8 @@ pub mod prelude {
     pub use super::compiler::Compiler;
     pub use super::error::Error;
     pub use super::metadata::Metadata;
-    pub use super::r#type::Type;
     pub use super::registry::Registry;
+    pub use super::r#type::Type;
 
     pub use bincode;
 }
