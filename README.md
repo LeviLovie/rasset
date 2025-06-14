@@ -39,3 +39,36 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 ```
+
+## Documentation
+
+### Asset definiton
+
+Proc macro `asset_def` creates a struct for the asset type.
+
+### Asset declaration
+
+Proc macro `assets` takes instances of a struct defined in `asset_def` and creates a `compile_assets` func.
+
+Proc macro `asset_file` takes a [YAML](https://en.wikipedia.org/wiki/YAML) file and generates assets from there, similar to `assets`. Example:
+
+```yaml
+- name: Player
+  type: Sprite
+  metadata:
+    size: [64, 64]
+    texture: "/path/to/player/texture/"
+
+- name: Enemy
+  type: Sprite
+  metadata:
+    size: [32, 32]
+    texture: "/path/to/enemy/texture/"
+```
+
+YAML supports there tags:
+
+- `!Rust`: Instead of storing string, parser with interpret the data as a Rust expression. `texture: !Rust include_bytes!("texture.png").to_vec()`
+- `!IncludeBytes`: Generates `include_bytes!(STRING)`.
+- `!IncludeStr`: Generates `include_str!(STRING)`.
+- `!IncludeVec`: Generates `include_bytes!(STRING).to_vec()`.

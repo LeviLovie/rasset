@@ -271,7 +271,7 @@ fn yaml_value_to_expr(value: &serde_yaml::Value) -> proc_macro2::TokenStream {
                     panic!("!IncludeBytes must wrap a string");
                 }
             }
-            "!IncludeString" => {
+            "!IncludeStr" => {
                 if let serde_yaml::Value::String(path) = &tagged.value {
                     quote! { include_str!(#path).to_string() }
                 } else {
