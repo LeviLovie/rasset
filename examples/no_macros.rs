@@ -55,9 +55,7 @@ fn main() -> Result<(), Error> {
         };
         compiler.add_asset(Box::new(enemy_sprite));
 
-        let result = compiler.compile()?;
-
-        result
+        compiler.compile()?
     };
 
     {
