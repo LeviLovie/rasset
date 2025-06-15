@@ -1,0 +1,27 @@
+[
+    Asset(
+        name: "Player",
+        type: "Sprite",
+        metadata: {
+            "width": 64,
+            "height": 64,
+            "texture": "!Rust include_bytes!(\"../Cargo.toml\").to_vec()",
+        }
+    ),
+    Asset(
+        name: "Enemy",
+        type: "Sprite",
+        metadata: {
+            "width": 64,
+            "height": 64,
+            "texture": "!IncludeVec ../../build.rs",
+        }
+    ),
+    Asset(
+        name: "Sprites",
+        type: "Sprites",
+        metadata: {
+            "sprites": ["Player", "Enemy"],
+        }
+    ),
+]

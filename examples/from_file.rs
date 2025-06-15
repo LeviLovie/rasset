@@ -2,7 +2,8 @@ use rasset::prelude::*;
 
 asset_def! {
     Sprite: {
-        size: (i64, i64),
+        width: i64,
+        height: i64,
         texture: String,
     },
     Sprites: {
@@ -10,7 +11,7 @@ asset_def! {
     }
 }
 
-asset_file!("examples/assets.yaml");
+asset_file!("examples/assets.ron");
 
 fn main() -> Result<(), Error> {
     let compiled_assets = compile_assets()?;
