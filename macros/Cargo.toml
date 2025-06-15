@@ -3,7 +3,7 @@ name = "rasset_macros"
 description = "Macros for the Rust Asset Management Library"
 license = "MIT"
 homepage = "https://github.com/LeviLovie/rasset"
-version = "1.0.0-beta.1"
+version = "1.0.0"
 edition = "2024"
 
 [lib]
