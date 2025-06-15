@@ -1,0 +1,27 @@
+[
+    Asset(
+        name: "Player",
+        type: "Sprite",
+        metadata: {
+            "width": 64,
+            "height": 64,
+            "texture": "/path/to/player/texture.png",
+        }
+    ),
+    Asset(
+        name: "Enemy",
+        type: "Sprite",
+        metadata: {
+            "width": 64,
+            "height": 64,
+            "texture": "/path/to/enemy/texture.png",
+        }
+    ),
+    Asset(
+        name: "Sprites",
+        type: "Sprites",
+        metadata: {
+            "sprites": ["Player", "Enemy"],
+        }
+    ),
+]

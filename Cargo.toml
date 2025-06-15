@@ -5,7 +5,7 @@ license = "MIT"
 homepage = "https://github.com/LeviLovie/rasset"
 repository = "https://github.com/LeviLovie/rasset"
 documentation = "https://docs.rs/rasset"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 edition = "2024"
 
 [dependencies]

@@ -207,25 +207,25 @@ pub fn asset_file(input: TokenStream) -> TokenStream {
         .unwrap_or_else(|e| panic!("Failed to read {}: {}", absolute_path.display(), e));
 
     #[derive(Debug, serde::Deserialize)]
-    struct AssetYaml {
+    struct Asset {
         name: String,
         #[serde(rename = "type")]
         ty: String,
-        metadata: std::collections::HashMap<String, serde_yaml::Value>,
+        metadata: std::collections::BTreeMap<ron::Value, ron::Value>,
     }
 
-    let parsed: Vec<AssetYaml> = serde_yaml::from_str(&contents)
-        .unwrap_or_else(|e| panic!("Failed to parse YAML {}: {}", file_path, e));
+    let parsed: Vec<Asset> = ron::from_str(&contents)
+        .unwrap_or_else(|e| panic!("Failed parsing RON from {}: {}", file_path, e));
 
     let asset_tokens = parsed.into_iter().map(|asset| {
         let _name_ident = syn::Ident::new(&asset.name, proc_macro2::Span::call_site());
         let ty_ident = syn::Ident::new(&asset.ty, proc_macro2::Span::call_site());
 
         let field_inits = asset.metadata.iter().map(|(k, v)| {
-            let key = k.as_str();
-            let ident = syn::Ident::new(key, proc_macro2::Span::call_site());
+            let key: String = k.clone().into_rust().expect("Key must be a string");
+            let ident = syn::Ident::new(&key, proc_macro2::Span::call_site());
 
-            let expr = yaml_value_to_expr(v);
+            let expr = value_to_expr(v);
             quote! { #ident: #expr }
         });
 
@@ -252,64 +252,90 @@ pub fn asset_file(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn yaml_value_to_expr(value: &serde_yaml::Value) -> proc_macro2::TokenStream {
+fn value_to_expr(value: &ron::Value) -> proc_macro2::TokenStream {
     match value {
-        serde_yaml::Value::Tagged(tagged) => match tagged.tag.to_string().as_str() {
-            "!Rust" => {
-                if let serde_yaml::Value::String(expr) = &tagged.value {
-                    let tokens: proc_macro2::TokenStream =
-                        expr.parse().expect("Invalid Rust expression");
-                    quote! { #tokens }
-                } else {
-                    panic!("!!Rust must wrap a string");
-                }
-            }
-            "!IncludeBytes" => {
-                if let serde_yaml::Value::String(path) = &tagged.value {
-                    quote! { include_bytes!(#path) }
-                } else {
-                    panic!("!IncludeBytes must wrap a string");
-                }
-            }
-            "!IncludeStr" => {
-                if let serde_yaml::Value::String(path) = &tagged.value {
-                    quote! { include_str!(#path).to_string() }
-                } else {
-                    panic!("!IncludeString must wrap a string");
-                }
-            }
-            "!IncludeVec" => {
-                if let serde_yaml::Value::String(path) = &tagged.value {
-                    quote! { include_bytes!(#path).to_vec() }
-                } else {
-                    panic!("!IncludeBytes must wrap a string");
-                }
-            }
-            _ => yaml_value_to_expr(&tagged.value),
-        },
-        serde_yaml::Value::String(s) => quote! { #s.to_string() },
-        serde_yaml::Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                quote! { #i }
-            } else if let Some(f) = n.as_f64() {
-                quote! { #f }
-            } else {
-                panic!("Unsupported number type: {}", n);
-            }
-        }
-        serde_yaml::Value::Sequence(seq) => {
-            let elems: Vec<_> = seq.iter().map(yaml_value_to_expr).collect();
-            if seq
+        ron::Value::Bool(b) => quote! { #b },
+        ron::Value::Char(c) => quote! { #c },
+        ron::Value::Map(map) => {
+            let entries: Vec<_> = map
                 .iter()
-                .all(|v| matches!(v, serde_yaml::Value::String(_)))
-            {
-                quote! { vec![#(#elems),*] }
-            } else {
-                quote! { (#(#elems),*) }
-            }
+                .map(|(k, v)| {
+                    let key = value_to_expr(k);
+                    let value = value_to_expr(v);
+                    quote! { (#key, #value) }
+                })
+                .collect();
+            quote! { std::collections::HashMap::from([#(#entries),*]) }
         }
-        serde_yaml::Value::Bool(b) => quote! { #b },
-        serde_yaml::Value::Null => quote! { () },
-        _ => panic!("Unsupported YAML value: {:?}", value),
+        ron::Value::Number(n) => match n {
+            ron::Number::I8(i) => {
+                let i = *i as i64;
+                quote! { #i }
+            }
+            ron::Number::I16(i) => {
+                let i = *i as i64;
+                quote! { #i }
+            }
+            ron::Number::I32(i) => {
+                let i = *i as i64;
+                quote! { #i }
+            }
+            ron::Number::I64(i) => quote! { #i },
+            ron::Number::U8(u) => {
+                let u = *u as i64;
+                quote! { #u }
+            }
+            ron::Number::U16(u) => {
+                let u = *u as i64;
+                quote! { #u }
+            }
+            ron::Number::U32(u) => {
+                let u = *u as i64;
+                quote! { #u }
+            }
+            ron::Number::U64(u) => {
+                let u = *u as i64;
+                quote! { #u }
+            }
+            ron::Number::F32(f) => {
+                let f = f.0 as f64;
+                quote! { #f.0 }
+            }
+            ron::Number::F64(f) => {
+                let f = f.0;
+                quote! { #f.0 }
+            }
+            ron::Number::__NonExhaustive(_) => {
+                panic!("Unsupported RON number type");
+            }
+        },
+        ron::Value::Option(Some(v)) => value_to_expr(v),
+        ron::Value::Option(None) => quote! { None },
+        ron::Value::String(s) => {
+            if s.starts_with("!Rust ") {
+                let expr_str = s.trim_start_matches("!Rust ");
+                let tokens: proc_macro2::TokenStream =
+                    expr_str.parse().expect("Invalid Rust expression");
+                return quote! { #tokens };
+            } else if s.starts_with("!IncludeBytes ") {
+                let path = s.trim_start_matches("!IncludeBytes ");
+                return quote! { include_bytes!(#path).to_vec() };
+            } else if s.starts_with("!IncludeStr ") {
+                let path = s.trim_start_matches("!IncludeStr ");
+                return quote! { include_str!(#path).to_string() };
+            } else if s.starts_with("!IncludeVec ") {
+                let path = s.trim_start_matches("!IncludeVec ");
+                return quote! { include_bytes!(#path).to_vec() };
+            }
+            quote! { #s.to_string() }
+        }
+        ron::Value::Seq(seq) => {
+            let elements: Vec<_> = seq.iter().map(value_to_expr).collect();
+            quote! { vec![#(#elements),*] }
+        }
+        ron::Value::Unit => quote! { () },
+        _ => {
+            panic!("Unsupported RON value type: {:?}", value);
+        }
     }
 }
